@@ -1,0 +1,51 @@
+{
+  "type": "record",
+  "name": "generalEntityAttributes",
+  "doc": "This is a schema for general entity before acquiring by the system",
+  "fields": [
+    {
+      "name": "basicAttributes",
+      "type": "basicEntityAttributes"
+    },
+    {
+      "name": "speed",
+      "type": "double",
+      "doc" : "This is the magnitude of the entity's velcity vector."
+    },
+    {
+      "name": "verticalSpeed",
+      "type": "double"
+    },
+    {
+      "name": "course",
+      "type": "double"
+    },
+    {
+      "name": "nationality",
+      "type": "enum",
+      "symbols" : ["ISRAEL", "USA", "SPAIN"]
+    },
+    {
+      "name": "category",
+      "type": "enum",
+      "symbols" : ["airplane", "boat"]
+    },
+    {
+      "name": "pictureURL",
+      "type": "string"
+    },
+    {
+      "name": "height",
+      "type": "dobule"
+    },
+    {
+      "name": "nickname",
+      "type": "string"
+    },
+    {
+      "name": "externalSystemID",
+      "type": "string",
+      "doc" : "This is ID given be external system."
+    }
+  ]
+}

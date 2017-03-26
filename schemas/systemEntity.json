@@ -1,0 +1,15 @@
+{
+  "type": "record",
+  "name": "systemEntity",
+  "doc": "This is a schema of a single processed entity with all attributes.",
+  "fields": [
+    {
+      "name": "entityID",
+      "type": "string"
+    },
+    {
+      "name": "entityAttributes",
+      "type": "generalEntityAttributes"
+    }
+  ]
+}
