@@ -14,7 +14,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 socketServer.on('connection', (socket) => {
-  const NUMBER_OF_ENTITIES = 50;
+  const NUMBER_OF_ENTITIES = 100;
   SimulateEntities(socketServer, NUMBER_OF_ENTITIES);
 });
 
@@ -22,7 +22,6 @@ function SimulateEntities(socketServer, numberOfEntities) {
   const entity = { id: 0, lat: 32.82994, long: 34.99019 };
   let id = 0;
   let relative = 0;
-  let entities = {};
 
   const intervalId = setInterval(() => {
     if (id < numberOfEntities) {
@@ -32,11 +31,36 @@ function SimulateEntities(socketServer, numberOfEntities) {
       tempEntity.long += relative;
 
       if (SaveEntity(tempEntity)) {
-        GetEntity(id);
+        GetEntity(id, SuccessReadEntityFromDatabase, ErrorReadEntityFromDatabase);
       }
 
       relative -= 0.0003;
       id++;
+    } else {
+      clearInterval(intervalId);
+      SimulateEntitiesUpdates(id);
+    }
+  }, 100);
+}
+
+function SimulateEntitiesUpdates(id) {
+  id--;
+  let relative = -0.001;
+
+  const intervalId = setInterval(() => {
+    if (id >= 0) {
+      GetEntity(id, (entity) => {
+        entity.lat += relative;
+        entity.long += relative;
+
+        SuccessReadEntityFromDatabase(entity);
+        SaveEntity(entity);
+      }, (id) => {
+
+      });
+
+      //relative -= 0.0003;
+      id--;
     } else {
       clearInterval(intervalId);
     }
@@ -47,14 +71,22 @@ function SaveEntity(entity) {
   return redisClient.set(entity.id.toString(), JSON.stringify(entity));
 }
 
-function GetEntity(id) {
+function GetEntity(id, successCallback, errorCallback) {
   redisClient.get(id.toString(), (err, res) => {
     if (!err) {
-      socketServer.emit('recieve-entity', JSON.parse(res));
+      successCallback(JSON.parse(res));
     } else {
-      console.log('Error: cannot find entity with id = ' + id);
+      errorCallback(id);
     }
   });
+}
+
+function SuccessReadEntityFromDatabase(entity) {
+  socketServer.emit('recieve-entity', entity);
+}
+
+function ErrorReadEntityFromDatabase(id) {
+  console.log('Error: cannot find entity with id = ' + id);
 }
 
 app.get('/getSchema/:schemaName', (req, res) => {

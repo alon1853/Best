@@ -23,14 +23,8 @@ class App extends React.Component {
   }
 
   RecieveEntity(entity) {
-    const id = entity.id;
     let currentEntities = this.state.entities;
-    if (currentEntities[id]) {
-      currentEntities[id].lat = entity.lat;
-      currentEntities[id].long = entity.long;
-    } else {
-      currentEntities[id] = { lat: entity.lat, long: entity.long };
-    }
+    currentEntities[entity.id] = { lat: entity.lat, long: entity.long };
 
     this.setState({ entities: currentEntities });
   }
