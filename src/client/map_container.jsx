@@ -1,7 +1,8 @@
 import React from 'react';
 import { render } from 'react-dom';
 import { Leaflet } from 'leaflet';
-import { Map, Marker, Popup, TileLayer } from 'react-leaflet';
+import { Map, TileLayer } from 'react-leaflet';
+import MapMarkers from './map_markers.jsx';
 
 class MapContainer extends React.Component {
   constructor(props) {
@@ -34,26 +35,13 @@ class MapContainer extends React.Component {
     const tileLayerOptions = {
       id: 'mapbox.streets',
       accessToken: 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw'
-    }
+    };
     const url = 'https://api.tiles.mapbox.com/v4/' + tileLayerOptions.id + '/{z}/{x}/{y}.png?access_token=' + tileLayerOptions.accessToken;
-
-    const markers = Object.keys(this.props.entities).map((key, index) => {
-      const entity = this.props.entities[key];
-      const position = [entity.lat, entity.long];
-
-      return (
-        <Marker position={position} key={key}>
-          <Popup>
-            <span>A pretty CSS3 popup.<br/>Easily customizable.</span>
-          </Popup>
-        </Marker>
-      );
-    });
 
     return (
       <Map center={this.props.center} zoom={this.props.zoom} style={this.state.mapStyle} className={this.props.divClass}>
         <TileLayer url={url} />
-        { markers }
+        <MapMarkers entities={this.props.entities} />
       </Map>
     );
   }

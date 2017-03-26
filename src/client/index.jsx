@@ -14,6 +14,7 @@ class App extends React.Component {
     };
 
     this.RecieveEntity = this.RecieveEntity.bind(this);
+    this.ShouldUpdateEntity = this.ShouldUpdateEntity.bind(this);
   }
 
   componentWillMount() {
@@ -22,11 +23,15 @@ class App extends React.Component {
     });
   }
 
-  RecieveEntity(entity) {
-    let currentEntities = this.state.entities;
-    currentEntities[entity.id] = { lat: entity.lat, long: entity.long };
+  ShouldUpdateEntity(entity) {
+    return !(this.state.entities[entity.id] && JSON.stringify(entity) === JSON.stringify(this.state.entities[entity.id]));
+  }
 
-    this.setState({ entities: currentEntities });
+  RecieveEntity(entity) {
+    if (this.ShouldUpdateEntity(entity)) {
+      this.state.entities[entity.id] = { lat: entity.lat, long: entity.long };
+      this.setState({ entities: this.state.entities });
+    }
   }
 
   render() {
