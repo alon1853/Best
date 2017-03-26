@@ -31,11 +31,8 @@ function SimulateEntities(socketServer, numberOfEntities) {
       tempEntity.lat += relative;
       tempEntity.long += relative;
 
-      const entityIdFromDatabase = SaveEntity(tempEntity);
-
-      if (entityIdFromDatabase != -1) {
-        const entityFromDatabase = GetEntity(entityIdFromDatabase);
-        socketServer.emit('recieve-entity', entityFromDatabase);
+      if (SaveEntity(tempEntity)) {
+        GetEntity(id);
       }
 
       relative -= 0.0003;
@@ -47,21 +44,15 @@ function SimulateEntities(socketServer, numberOfEntities) {
 }
 
 function SaveEntity(entity) {
-  redisClient.hmset(entity.id, {id: entity.id, lat: entity.lat, long: entity.long}, (err, res) => {
-    if (!err) {
-      return entity.id;
-    } else {
-      return -1;
-    }
-  });
+  return redisClient.set(entity.id.toString(), JSON.stringify(entity));
 }
 
 function GetEntity(id) {
-  redisClient.hgetall(id, (err, res) => {
+  redisClient.get(id.toString(), (err, res) => {
     if (!err) {
-      return res;
+      socketServer.emit('recieve-entity', JSON.parse(res));
     } else {
-      return { id: -1, lat: 0, long: 0 };
+      console.log('Error: cannot find entity with id = ' + id);
     }
   });
 }
