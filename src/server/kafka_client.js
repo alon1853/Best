@@ -1,6 +1,7 @@
 const kafkaRest = require('kafka-rest');
-const KAFKA_HOST = 'localhost';
-const KAFKA_PORT = 8082;
+const KAFKA_HOST = process.env.KAFKA_REST_PROXY_IP || 'localhost';
+const KAFKA_PORT = process.env.KAFKA_REST_PROXY_PORT || 8082;
+
 const fs = require('fs');
 
 const kafka = new kafkaRest({ 'url': 'http://' + KAFKA_HOST + ':' + KAFKA_PORT });
