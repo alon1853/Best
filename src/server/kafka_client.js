@@ -6,26 +6,46 @@ const fs = require('fs');
 
 const kafka = new kafkaRest({ 'url': 'http://' + KAFKA_HOST + ':' + KAFKA_PORT });
 
-//kafka.topic('test').produce('message');
 
 function SimulateAvro() {
-  fs.readFile('schemas/entityFamily.json', (err, data) => {
-    if (err) {
-      console.log('Can not simulate Avro, error while reading schema file');
+  kafka.topic('test2').produce('message', (err, res) => {
+    if (!err) {
+      console.log('Created topic test2 successfully!');
     } else {
-      const shemaAsJson = JSON.parse(data);
-
-      const userIdSchema = new kafkaRest.AvroSchema("int");
-      const userInfoSchema = new kafkaRest.AvroSchema(shemaAsJson);
-      kafka.topic('entityFamily').produce(userInfoSchema, {'avro': 'record'}, {'avro': 'another record'});
+      console.log(err);
     }
   });
+
+  const schema = new kafkaRest.AvroSchema({
+    "name": "TweetText",
+    "type": "record",
+    "fields": [
+      { "name": "id", "type": "string" },
+      { "name": "text", "type": "string" }
+    ]
+  });
+  const target = kafka.topic('my-topic');
+  const saved_data = {
+    'id': '1',
+    'text': 'My tweet'
+  };
+  let consumed = [];
+  consumed.push(saved_data);
+
+  target.produce(schema, consumed, (err, res) => {
+    if (!err) {
+      console.log('Sent topic my-topic with Avro successfully!!');
+    } else {
+      console.log(err);
+    }
+  });
+
+  consumed = [];
 }
 
 SimulateAvro();
 
 function ImportRedis(redisClient) {
-
 }
 
 module.exports = ImportRedis;

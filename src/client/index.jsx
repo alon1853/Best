@@ -35,11 +35,12 @@ class App extends React.Component {
     }
   }
 
+  // <MapContainer center={[32.82994, 34.99019]} zoom={16} divClass={'map-container'} entities={this.state.entities} />
   render() {
     return (
       <div>
         <MapPanel entitiesNumber={Object.keys(this.state.entities).length} />
-        <MapContainer center={[32.82994, 34.99019]} zoom={16} divClass={'map-container'} entities={this.state.entities} />
+        <NewMapContainer />
       </div>
     );
   }
