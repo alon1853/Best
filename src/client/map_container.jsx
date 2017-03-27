@@ -1,6 +1,5 @@
 import React from 'react';
 import { render } from 'react-dom';
-import { Leaflet } from 'leaflet';
 import { Map, TileLayer } from 'react-leaflet';
 import MapMarkers from './map_markers.jsx';
 
