@@ -8,5 +8,11 @@ RUN npm install
 
 COPY . /usr/src/app
 
+ENV KAFKA_REST_PROXY_IP "localhost"
+ENV KAFKA_REST_PROXY_PORT 8082
+
+ENV REDIS_IP "localhost"
+ENV REDIS_PORT 6379
+
 EXPOSE 4000
 CMD ["npm", "start"]

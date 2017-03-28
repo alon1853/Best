@@ -8,14 +8,14 @@ class MapContainer extends React.Component {
     super(props);
 
     this.state = {
-      mapStyle: { width: "0px", height: "0px" }
+      mapStyle: { width: 0, height: 0 }
     };
 
     this.UpdateMapSize = this.UpdateMapSize.bind(this);
   }
 
   UpdateMapSize() {
-    this.setState({ mapStyle: { width: window.innerWidth + 'px', height: window.innerHeight + 'px' } });
+    this.setState({ mapStyle: { width: window.innerWidth, height: window.innerHeight } });
   }
 
   componentWillMount() {
@@ -38,7 +38,7 @@ class MapContainer extends React.Component {
     const url = 'https://api.tiles.mapbox.com/v4/' + tileLayerOptions.id + '/{z}/{x}/{y}.png?access_token=' + tileLayerOptions.accessToken;
 
     return (
-      <Map center={this.props.center} zoom={this.props.zoom} style={this.state.mapStyle} className={this.props.divClass}>
+      <Map center={this.props.center} zoom={this.props.zoom} style={this.state.mapStyle} className={this.props.divClass} ref="mapElement">
         <TileLayer url={url} />
         <MapMarkers entities={this.props.entities} />
       </Map>

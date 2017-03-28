@@ -2,7 +2,6 @@ import React from 'react';
 import { render } from 'react-dom';
 import MapContainer from './map_container.jsx';
 import MapPanel from './map_panel.jsx';
-import NewMapContainer from './new_map_container.jsx';
 
 const socketClient = require('./socket_client.js');
 
@@ -35,12 +34,11 @@ class App extends React.Component {
     }
   }
 
-  // <MapContainer center={[32.82994, 34.99019]} zoom={16} divClass={'map-container'} entities={this.state.entities} />
   render() {
     return (
       <div>
         <MapPanel entitiesNumber={Object.keys(this.state.entities).length} />
-        <NewMapContainer />
+        <MapContainer center={[32.82994, 34.99019]} zoom={16} divClass={'map-container'} entities={this.state.entities} />
       </div>
     );
   }
