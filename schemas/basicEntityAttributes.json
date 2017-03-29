@@ -1,5 +1,6 @@
 {
   "type": "record",
+  "namespace" : "org.sourcestream.entities",
   "name": "basicEntityAttributes",
   "doc": "This is a schema for basic entity attributes, this will represent basic entity in all life cycle",
   "fields": [
@@ -24,7 +25,7 @@
     },
     {
       "name": "isNotTracked",
-      "type": "bool"
+      "type": "boolean"
     },
     {
       "name": "entityOffset",

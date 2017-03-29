@@ -1,5 +1,6 @@
 import React from 'react';
 import { render } from 'react-dom';
+
 import MapContainer from './map_container.jsx';
 import MapPanel from './map_panel.jsx';
 

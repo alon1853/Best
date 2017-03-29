@@ -23,7 +23,7 @@ function SimulateAvro() {
         }
       });
       stream.on('error', function(err) {
-        console.log("Consumer instance reported an error: " + err);
+        //console.log("Consumer instance reported an error: " + err);
         shutdown();
       });
 
@@ -53,7 +53,7 @@ function SimulateAvro() {
       if (!err) {
         console.log('Sent topic my-topic with Avro successfully!!');
       } else {
-        console.log(err);
+        //console.log(err);
       }
     });
 
