@@ -1,0 +1,21 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: ui-best
+  namespace: default
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: ui-best
+      labels:
+        app: ui-best
+    spec:
+      containers:
+      - name: ui-best
+        image: docker.io/alon1853/best
+        env:
+        - name: KAFKA_REST_PROXY_IP
+          value: "http-proxy.kafka"
+        - name: KAFKA_REST_PROXY_PORT
+          value: "8082"
