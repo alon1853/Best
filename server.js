@@ -33,24 +33,43 @@ redisClient.on('error', (err) => {
 });
 
 socketServer.on('connection', (socket) => {
-  // const NUMBER_OF_ENTITIES = 100;
-  // SimulateEntities(socketServer, NUMBER_OF_ENTITIES);
-
-  SubscribeToEntityUpdatesFromKafka();
-
-  // setTimeout(() => {
-  //   const entityData = {
-  //     "coordinate": {
-  //       "lat": 33,
-  //       "long": 33.4
-  //     },
-  //     "isNotTracked": false,
-  //     "entityOffset": 1
-  //   };
-  //
-  //   SendEntityToKafka(entityData);
-  // }, 2000);
 });
+
+// ---------- Init ----------
+
+SubscribeToEntityUpdatesFromKafka();
+
+// GetSchema((err) => {
+//   console.log(err);
+// }, (schema) => {
+//   let entities = [];
+//   const entity = {
+//     "entityID": "123abc",
+//     "entityAttributes": {
+//       "basicAttributes": {
+//         "coordinate": {
+//           "lat": 33.3,
+//           "long": 34.3
+//         },
+//         "isNotTracked": false,
+//         "entityOffset": 0
+//       }
+//     },
+//     "speed": 10,
+//     "elevation": 5,
+//     "course": 1,
+//     "nationality": "ISRAEL",
+//     "category": "boat",
+//     "pictureURL": "",
+//     "height": 3,
+//     "nickname": "LOL",
+//     "externalSystemID": "456def"
+//   };
+//
+//   entities.push(entity);
+//
+//   SendEntitiesToKafka(schema, entities);
+// });
 
 // ---------- Logic ----------
 
@@ -65,12 +84,12 @@ function SubscribeToEntityUpdatesFromKafka() {
 
       stream.on('data', function(msgs) {
         console.log(msgs);
-        
+
         for(let i = 0; i < msgs.length; i++) {
           const entity = msgs[i].value;
 
-          if (SaveEntity(entity)) {
-            GetEntity(entity.entityID, SuccessReadEntityFromDatabase, ErrorReadEntityFromDatabase);
+          if (SaveEntityToDatabase(entity)) {
+            SaveEntityToDatabase(entity.entityID, SuccessReadEntityFromDatabase, ErrorReadEntityFromDatabase);
           }
 
           console.log(entity);
@@ -84,95 +103,27 @@ function SubscribeToEntityUpdatesFromKafka() {
   });
 }
 
-function SendEntityToKafka(entity) {
-  const systemEntitySchema = GetSchema('systemEntity', (err) => {
-    return undefined;
-  }, (data) => {
-    return data;
-  });
+function SendEntitiesToKafka(schema, entitiesArray) {
+  const avroSchema = new kafkaRest.AvroSchema(schema);
+  const targetTopic = kafkaClient.topic(UPDATE_TOPIC_NAME).partition(0);
 
-  const generalEntityAttributesSchema = GetSchema('generalEntityAttributes', (err) => {
-    return undefined;
-  }, (data) => {
-    return data;
-  });
-
-  GetSchema('basicEntityAttributes', (err) => {
-    console.log(err);
-  }, (data) => {
-    const schema = new kafkaRest.AvroSchema(data);
-    const target = kafkaClient.topic(UPDATE_TOPIC_NAME).partition(0);
-
-    let consumed = [];
-    consumed.push(entity);
-
-    target.produce(schema, consumed, (err, res) => {
-      if (!err) {
-        console.log('Sent topic "update" with Avro successfully!!');
-      } else {
-        console.log(err);
-      }
-    });
-
-    consumed = [];
-  });
-}
-
-function SimulateEntities(socketServer, numberOfEntities) {
-  const entity = { id: 0, lat: 32.82994, long: 34.99019 };
-  let id = 0;
-  let relative = 0;
-
-  const intervalId = setInterval(() => {
-    if (id < numberOfEntities) {
-      let tempEntity = JSON.parse(JSON.stringify(entity));
-      tempEntity.id = id;
-      tempEntity.lat += relative;
-      tempEntity.long += relative;
-
-      if (SaveEntity(tempEntity)) {
-        GetEntity(id, SuccessReadEntityFromDatabase, ErrorReadEntityFromDatabase);
-      }
-
-      relative -= 0.0003;
-      id++;
+  targetTopic.produce(avroSchema, entitiesArray, (err, res) => {
+    if (!err) {
+      console.log('Sent topic "update" with Avro successfully!!');
     } else {
-      clearInterval(intervalId);
-      SimulateEntitiesUpdates(id);
+      console.log(err);
     }
-  }, 100);
+  });
+
+  consumed = [];
 }
 
-function SimulateEntitiesUpdates(id) {
-  id--;
-  let relative = -0.001;
-
-  const intervalId = setInterval(() => {
-    if (id >= 0) {
-      GetEntity(id, (entity) => {
-        entity.lat += relative;
-        entity.long += relative;
-
-        SuccessReadEntityFromDatabase(entity);
-        SaveEntity(entity);
-      }, (id) => {
-
-      });
-
-      //relative -= 0.0003;
-      id--;
-    } else {
-      clearInterval(intervalId);
-    }
-  }, 100);
-}
-
-function SaveEntity(entity) {
+function SaveEntityToDatabase(entity) {
   return redisClient.set(entity.entityID, JSON.stringify(entity));
 }
 
-function GetEntity(id, successCallback, errorCallback) {
-  redisClient.get(id.toString(), (err, res) => {
+function GetEntityFromDatabase(id, successCallback, errorCallback) {
+  redisClient.get(id, (err, res) => {
     if (!err) {
       successCallback(JSON.parse(res));
     } else {
@@ -182,18 +133,21 @@ function GetEntity(id, successCallback, errorCallback) {
 }
 
 function SuccessReadEntityFromDatabase(entity) {
-  socketServer.emit('recieve-entity', entity);
+  const entityToClient = {
+    id: entity.entityID,
+    lat: entity.entityAttributes.basicAttributes.coordinate.lat,
+    long: entity.entityAttributes.basicAttributes.coordinate.long
+  };
+  
+  socketServer.emit('recieve-entity', entityToClient);
 }
 
 function ErrorReadEntityFromDatabase(id) {
   console.log('Error: cannot find entity with id = ' + id);
 }
 
-function GetSchema(schemaName, errCallback, successCallback) {
-  const SCHEMAS_FOLDER = 'schemas/';
-  const SCHEMA_FORMAT = '.json';
-
-  fs.readFile(SCHEMAS_FOLDER + schemaName + SCHEMA_FORMAT, (err, data) => {
+function GetSchema(errCallback, successCallback) {
+  fs.readFile('schemas/schema.json', (err, data) => {
     if (err) {
       errCallback('Error, can not access file ' + SCHEMAS_FOLDER + schemaName + SCHEMA_FORMAT);
     } else {
