@@ -19,3 +19,7 @@ spec:
           value: "http-proxy.kafka"
         - name: KAFKA_REST_PROXY_PORT
           value: "8082"
+        - name: REDIS_IP
+          value: "redis-service"
+        - name: REDIS_PORT
+          value: "6379"
