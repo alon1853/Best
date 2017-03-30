@@ -83,7 +83,7 @@ SubscribeToEntityUpdatesFromKafka();
 // ---------- Logic ----------
 
 function SubscribeToEntityUpdatesFromKafka() {
-  kafkaClient.consumer(UPDATE_CONSUMER_GROUP_NAME).join({ "format": "avro" }, function(err, ci) {
+  kafkaClient.consumer(UPDATE_CONSUMER_GROUP_NAME).join({ "format": "avro", "auto.offset.reset": "smallest" }, function(err, ci) {
     if (err) {
       console.log('Failed to create instance in consumer group: ' + err);
     } else {
@@ -95,13 +95,13 @@ function SubscribeToEntityUpdatesFromKafka() {
         for(let i = 0; i < msgs.length; i++) {
           const entity = msgs[i].value;
 
-          console.log(JSON.stringify(entity));
+          console.log(entity.entityID);
 
           if (SaveEntityToDatabase(entity)) {
             SaveEntityToDatabase(entity.entityID, SuccessReadEntityFromDatabase, ErrorReadEntityFromDatabase);
           }
 
-          console.log(entity);
+          //console.log(entity);
         }
       });
 
