@@ -14,7 +14,7 @@ class MapMarkers extends React.Component {
         return (
           <Marker position={position} key={key}>
             <Popup>
-              <span>A pretty CSS3 popup.<br/>Easily customizable.</span>
+              <span>{key}</span>
             </Popup>
           </Marker>
         );

@@ -1,0 +1,20 @@
+{
+  "type": "record",
+  "name": "mergeEvent",
+  "doc": "This is a schema for merge entities event",
+  "fields": [
+    {
+      "name": "mergedEntitiesId",
+      "type": [
+        {
+          "type": "array",
+          "items": {
+            "name": "entityId",
+            "type": "string"
+          }
+        }
+      ],
+      "doc": "Ids of all entities sources which will be merge together."
+    }
+  ]
+}

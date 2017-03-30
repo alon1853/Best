@@ -20,6 +20,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 const UPDATE_TOPIC_NAME = 'update';
+const MERGE_TOPIC_NAME = 'merge';
 const UPDATE_CONSUMER_GROUP_NAME = 'update-consumer-group';
 
 // ---------- Events ----------
@@ -38,16 +39,27 @@ socketServer.on('connection', (socket) => {
       GetEntityFromDatabase(keys[i], SuccessReadEntityFromDatabase, ErrorReadEntityFromDatabase);
     }
   });
+
+  socket.on('entities-merge', (entitiesIDs) => {
+    MergeEntities(entitiesIDs);
+  });
 });
 
 // ---------- Init ----------
 
 SubscribeToEntityUpdatesFromKafka();
 
-// GetSchema((err) => {
+let mergeSchema;
+GetSchema('merge_schema.json', (err) => {
+  console.log(err);
+}, (schema) => {
+  mergeSchema = schema;
+});
+
+// GetSchema('update_schema.json', (err) => {
 //   console.log(err);
 // }, (schema) => {
-//   let id = 2000;
+//   let id = 1;
 //   let lat = 32.82994;
 //   let long = 34.99019;
 //   let entities = [];
@@ -87,7 +99,7 @@ SubscribeToEntityUpdatesFromKafka();
 //   }
 //
 //   setTimeout(() => {
-//     SendEntitiesToKafka(schema, entities);
+//     SendDataToKafka(UPDATE_TOPIC_NAME, schema, entities);
 //   }, 2000);
 // });
 
@@ -106,13 +118,11 @@ function SubscribeToEntityUpdatesFromKafka() {
         for(let i = 0; i < msgs.length; i++) {
           const entity = msgs[i].value;
 
-          console.log(JSON.stringify(entity));
+          console.log('Received entity with entityID = ' + entity.entityID);
 
           if (SaveEntityToDatabase(entity)) {
             GetEntityFromDatabase(entity.entityID, SuccessReadEntityFromDatabase, ErrorReadEntityFromDatabase);
           }
-
-          //console.log(entity);
         }
       });
 
@@ -123,19 +133,17 @@ function SubscribeToEntityUpdatesFromKafka() {
   });
 }
 
-function SendEntitiesToKafka(schema, entitiesArray) {
+function SendDataToKafka(topicName, schema, dataArray) {
   const avroSchema = new kafkaRest.AvroSchema(schema);
-  const targetTopic = kafkaClient.topic(UPDATE_TOPIC_NAME).partition(0);
+  const targetTopic = kafkaClient.topic(topicName).partition(0);
 
-  targetTopic.produce(avroSchema, entitiesArray, (err, res) => {
+  targetTopic.produce(avroSchema, dataArray, (err, res) => {
     if (!err) {
-      console.log('Sent topic "update" with Avro successfully!!');
+      console.log('Sent topic "' + topicName + '" with Avro successfully!!');
     } else {
       console.log(err);
     }
   });
-
-  consumed = [];
 }
 
 function SaveEntityToDatabase(entity) {
@@ -166,8 +174,22 @@ function ErrorReadEntityFromDatabase(id) {
   console.log('Error: cannot find entity with id = ' + id);
 }
 
-function GetSchema(errCallback, successCallback) {
-  fs.readFile('schemas/schema.json', (err, data) => {
+function MergeEntities(entitiesIDs) {
+  let idObjects = [];
+
+  const entitiesAsSchema = {
+    "mergedEntitiesId": {
+      "array": entitiesIDs
+    }
+  };
+
+  dataToSend = [];
+  dataToSend.push(entitiesAsSchema);
+  SendDataToKafka(MERGE_TOPIC_NAME, mergeSchema, dataToSend);
+}
+
+function GetSchema(schemaName, errCallback, successCallback) {
+  fs.readFile('schemas/' + schemaName, (err, data) => {
     if (err) {
       errCallback('Error, can not access file ' + SCHEMAS_FOLDER + schemaName + SCHEMA_FORMAT);
     } else {
