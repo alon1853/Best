@@ -4,6 +4,7 @@ const http =	require('http').Server(app);
 const bodyParser = require('body-parser');
 const socketServer = require('socket.io')(http);
 const fs = require('fs');
+const path = require('path');
 const redis = require('redis');
 const kafkaRest = require('kafka-rest');
 const NODE_PORT = 4000;
@@ -15,7 +16,7 @@ const KAFKA_PORT = process.env.KAFKA_REST_PROXY_PORT || 8082;
 const redisClient = redis.createClient({ host: REDIS_HOST, port: REDIS_PORT });
 const kafkaClient = new kafkaRest({ 'url': 'http://' + KAFKA_HOST + ':' + KAFKA_PORT });
 
-app.use(express.static('public'));
+app.use(express.static(path.join('public')));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 

@@ -4,7 +4,7 @@ import MapContainer from './map_container.jsx';
 import MapPanel from './map_panel.jsx';
 // import OpenLayers from './openlayers.jsx';
 
-const socketClient = require('./socket_client.js')('http://ui-best-service:4000');
+const socketClient = require('./socket_client.js');
 
 class App extends React.Component {
   constructor(props) {
