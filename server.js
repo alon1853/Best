@@ -38,7 +38,7 @@ socketServer.on('connection', (socket) => {
       console.log(err);
     } else {
       for (let i = 0; i < keys.length; i++) {
-        console.log(keys[i]);
+        GetEntityFromDatabase(keys[i], SuccessReadEntityFromDatabase, ErrorReadEntityFromDatabase);
       }
     }
   });
@@ -95,10 +95,10 @@ function SubscribeToEntityUpdatesFromKafka() {
         for(let i = 0; i < msgs.length; i++) {
           const entity = msgs[i].value;
 
-          console.log(entity.entityID);
+          console.log(JSON.stringify(entity));
 
           if (SaveEntityToDatabase(entity)) {
-            SaveEntityToDatabase(entity.entityID, SuccessReadEntityFromDatabase, ErrorReadEntityFromDatabase);
+            GetEntityFromDatabase(entity.entityID, SuccessReadEntityFromDatabase, ErrorReadEntityFromDatabase);
           }
 
           //console.log(entity);
