@@ -4,7 +4,6 @@ const http =	require('http').Server(app);
 const bodyParser = require('body-parser');
 const socketServer = require('socket.io')(http);
 const fs = require('fs');
-const path = require('path');
 const redis = require('redis');
 const kafkaRest = require('kafka-rest');
 const NODE_PORT = 4000;
@@ -16,7 +15,7 @@ const KAFKA_PORT = process.env.KAFKA_REST_PROXY_PORT || 8082;
 const redisClient = redis.createClient({ host: REDIS_HOST, port: REDIS_PORT });
 const kafkaClient = new kafkaRest({ 'url': 'http://' + KAFKA_HOST + ':' + KAFKA_PORT });
 
-app.use(express.static(path.join('public')));
+app.use(express.static('public'));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
@@ -35,12 +34,8 @@ redisClient.on('error', (err) => {
 
 socketServer.on('connection', (socket) => {
   redisClient.keys('*', (err, keys) => {
-    if (err) {
-      console.log(err);
-    } else {
-      for (let i = 0; i < keys.length; i++) {
-        GetEntityFromDatabase(keys[i], SuccessReadEntityFromDatabase, ErrorReadEntityFromDatabase);
-      }
+    for (let i = 0; i < keys.length; i++) {
+      GetEntityFromDatabase(keys[i], SuccessReadEntityFromDatabase, ErrorReadEntityFromDatabase);
     }
   });
 });
@@ -52,39 +47,54 @@ SubscribeToEntityUpdatesFromKafka();
 // GetSchema((err) => {
 //   console.log(err);
 // }, (schema) => {
+//   let id = 2000;
+//   let lat = 32.82994;
+//   let long = 34.99019;
 //   let entities = [];
-//   const entity = {
-//     "entityID": "123abc",
-//     "entityAttributes": {
-//       "basicAttributes": {
-//         "coordinate": {
-//           "lat": 33.3,
-//           "long": 34.3
+//
+//   for (let i = 0; i < 5; i++) {
+//     const entity = {
+//       "entityID": id.toString(),
+//       "entityAttributes": {
+//         "basicAttributes": {
+//           "coordinate": {
+//             "lat": lat,
+//             "long": long
+//           },
+//           "isNotTracked": false,
+//           "entityOffset": 0
 //         },
-//         "isNotTracked": false,
-//         "entityOffset": 0
+//         "speed": 12,
+//         "elevation": 0,
+//         "course": 0,
+//         "nationality": "ISRAEL",
+//         "category": "airplane",
+//         "pictureURL": "url",
+//         "height": 0,
+//         "nickname": "nickname",
+//         "externalSystemID": "11"
+//       },
+//       "sons":{
+//         "array": []
 //       }
-//     },
-//     "speed": 10,
-//     "elevation": 5,
-//     "course": 1,
-//     "nationality": "ISRAEL",
-//     "category": "boat",
-//     "pictureURL": "",
-//     "height": 3,
-//     "nickname": "LOL",
-//     "externalSystemID": "456def"
-//   };
+//     }
 //
-//   entities.push(entity);
+//     entities.push(entity);
 //
-//   SendEntitiesToKafka(schema, entities);
+//     id++;
+//     lat -= 0.0032;
+//     long -= 0.0032;
+//   }
+//
+//   setTimeout(() => {
+//     SendEntitiesToKafka(schema, entities);
+//   }, 2000);
 // });
 
 // ---------- Logic ----------
 
 function SubscribeToEntityUpdatesFromKafka() {
-  kafkaClient.consumer(UPDATE_CONSUMER_GROUP_NAME).join({ "format": "avro", "auto.offset.reset": "smallest" }, function(err, ci) {
+  kafkaClient.consumer(UPDATE_CONSUMER_GROUP_NAME).join({ "format": "avro" }, (err, ci) => {
     if (err) {
       console.log('Failed to create instance in consumer group: ' + err);
     } else {
