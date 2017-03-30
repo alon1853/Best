@@ -33,6 +33,15 @@ redisClient.on('error', (err) => {
 });
 
 socketServer.on('connection', (socket) => {
+  redisClient.keys('*', (err, keys) => {
+    if (err) {
+      console.log(err);
+    } else {
+      for (let i = 0; i < keys.length; i++) {
+        console.log(keys[i]);
+      }
+    }
+  });
 });
 
 // ---------- Init ----------
@@ -83,10 +92,10 @@ function SubscribeToEntityUpdatesFromKafka() {
       console.log('Subscribed to topic ' + UPDATE_TOPIC_NAME + ' successfully!');
 
       stream.on('data', function(msgs) {
-        console.log(msgs);
-
         for(let i = 0; i < msgs.length; i++) {
           const entity = msgs[i].value;
+
+          console.log(JSON.stringify(entity));
 
           if (SaveEntityToDatabase(entity)) {
             SaveEntityToDatabase(entity.entityID, SuccessReadEntityFromDatabase, ErrorReadEntityFromDatabase);
@@ -138,7 +147,7 @@ function SuccessReadEntityFromDatabase(entity) {
     lat: entity.entityAttributes.basicAttributes.coordinate.lat,
     long: entity.entityAttributes.basicAttributes.coordinate.long
   };
-  
+
   socketServer.emit('recieve-entity', entityToClient);
 }
 
