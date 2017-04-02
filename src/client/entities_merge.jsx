@@ -23,12 +23,12 @@ class EntitiesMerge extends React.Component {
     if (entitiesIDs[0] !== "" && arrayLength > 1) {
       let shouldMerge = true;
 
-      for (let i = 0; shouldMerge && i < arrayLength; i++) {
-        if (!this.props.entities[entitiesIDs[i]]) {
-          shouldMerge = false;
-          this.setState({messageColor: "red", messageText: "Please insert valid IDs"});
-        }
-      }
+      // for (let i = 0; shouldMerge && i < arrayLength; i++) {
+      //   if (!this.props.entities[entitiesIDs[i]]) {
+      //     shouldMerge = false;
+      //     this.setState({messageColor: "red", messageText: "Please insert valid IDs"});
+      //   }
+      // }
 
       if (shouldMerge) {
         this.props.mergeEntities(entitiesIDs);
