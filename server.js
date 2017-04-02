@@ -27,6 +27,15 @@ const UPDATE_CONSUMER_GROUP_NAME = 'update-consumer-group';
 
 redisClient.on('connect', () => {
   console.log('Redis is connected on ' + REDIS_HOST + ':' + REDIS_PORT + '..');
+
+  redisClient.flushdb((err, res) => {
+    if (!err) {
+      console.log('Flashed Redis successfully!');
+      //SimulateEntitiesToDatabase();
+    } else {
+      console.log(err);
+    }
+  });
 });
 
 redisClient.on('error', (err) => {
@@ -34,12 +43,6 @@ redisClient.on('error', (err) => {
 });
 
 socketServer.on('connection', (socket) => {
-  redisClient.keys('*', (err, keys) => {
-    for (let i = 0; i < keys.length; i++) {
-      GetEntityFromDatabase(keys[i], SuccessReadEntityFromDatabase, ErrorReadEntityFromDatabase);
-    }
-  });
-
   socket.on('entities-merge', (entitiesIDs) => {
     MergeEntities(entitiesIDs);
   });
@@ -56,54 +59,42 @@ GetSchema('merge_schema.json', (err) => {
   mergeSchema = schema;
 });
 
-// GetSchema('update_schema.json', (err) => {
-//   console.log(err);
-// }, (schema) => {
-//   let id = 1;
-//   let lat = 32.82994;
-//   let long = 34.99019;
-//   let entities = [];
-//
-//   for (let i = 0; i < 5; i++) {
-//     const entity = {
-//       "entityID": id.toString(),
-//       "entityAttributes": {
-//         "basicAttributes": {
-//           "coordinate": {
-//             "lat": lat,
-//             "long": long
-//           },
-//           "isNotTracked": false,
-//           "entityOffset": 0
-//         },
-//         "speed": 12,
-//         "elevation": 0,
-//         "course": 0,
-//         "nationality": "ISRAEL",
-//         "category": "airplane",
-//         "pictureURL": "url",
-//         "height": 0,
-//         "nickname": "nickname",
-//         "externalSystemID": "11"
-//       },
-//       "sons":{
-//         "array": []
-//       }
-//     }
-//
-//     entities.push(entity);
-//
-//     id++;
-//     lat -= 0.0032;
-//     long -= 0.0032;
-//   }
-//
-//   setTimeout(() => {
-//     SendDataToKafka(UPDATE_TOPIC_NAME, schema, entities);
-//   }, 2000);
-// });
-
 // ---------- Logic ----------
+
+function SimulateEntitiesToDatabase() {
+  let id = 0;
+  let lat = 32.82994;
+  let long = 34.99019;
+  const NUMBER_OF_ENTITIES = 20;
+
+  for (let i = 0; i < NUMBER_OF_ENTITIES; i++) {
+    const entity = {
+      "entityID": id.toString(),
+      "entityAttributes": {
+        "basicAttributes": {
+          "coordinate": {
+            "lat": lat,
+            "long": long
+          }
+        }
+      }
+    };
+
+    id++;
+    lat -= 0.01;
+    long -= 0.01;
+
+    SaveEntityToDatabase(entity, () => {
+        if (i === NUMBER_OF_ENTITIES - 1) {
+          SendUpdateToClient();
+        }
+    });
+  }
+}
+
+function SendUpdateToClient() {
+  socketServer.emit('entities-update');
+}
 
 function SubscribeToEntityUpdatesFromKafka() {
   kafkaClient.consumer(UPDATE_CONSUMER_GROUP_NAME).join({ "format": "avro" }, (err, ci) => {
@@ -120,9 +111,7 @@ function SubscribeToEntityUpdatesFromKafka() {
 
           console.log('Received entity with entityID = ' + entity.entityID);
 
-          if (SaveEntityToDatabase(entity)) {
-            GetEntityFromDatabase(entity.entityID, SuccessReadEntityFromDatabase, ErrorReadEntityFromDatabase);
-          }
+          SaveEntityToDatabase(entity, SendUpdateToClient);
         }
       });
 
@@ -146,32 +135,37 @@ function SendDataToKafka(topicName, schema, dataArray) {
   });
 }
 
-function SaveEntityToDatabase(entity) {
-  return redisClient.set(entity.entityID, JSON.stringify(entity));
-}
-
-function GetEntityFromDatabase(id, successCallback, errorCallback) {
-  redisClient.get(id, (err, res) => {
-    if (!err) {
-      successCallback(JSON.parse(res));
-    } else {
-      errorCallback(id);
-    }
+function SaveEntityToDatabase(entity, finishCallback) {
+  redisClient.set(entity.entityID, JSON.stringify(entity), () => {
+    finishCallback();
   });
 }
 
-function SuccessReadEntityFromDatabase(entity) {
-  const entityToClient = {
-    id: entity.entityID,
-    lat: entity.entityAttributes.basicAttributes.coordinate.lat,
-    long: entity.entityAttributes.basicAttributes.coordinate.long
-  };
+function GetEntitiesByKeys(keys, entitiesArray, finishCallback) {
+  if (keys.length === 0) {
+    finishCallback();
+  } else {
+    for (let i = 0; i < keys.length; i++) {
+      redisClient.get(keys[i], (err, res) => {
+        if (!err) {
+          const entityFromDatabase = JSON.parse(res);
+          const entityToClient = {
+            id: entityFromDatabase.entityID,
+            lat: entityFromDatabase.entityAttributes.basicAttributes.coordinate.lat,
+            long: entityFromDatabase.entityAttributes.basicAttributes.coordinate.long
+          };
+          entitiesArray.push(entityToClient);
 
-  socketServer.emit('recieve-entity', entityToClient);
-}
-
-function ErrorReadEntityFromDatabase(id) {
-  console.log('Error: cannot find entity with id = ' + id);
+          if (keys.length - 1 === i) {
+            finishCallback();
+          }
+        } else {
+          console.log(err);
+          finishCallback();
+        }
+      });
+    }
+  }
 }
 
 function MergeEntities(entitiesIDs) {
@@ -197,6 +191,20 @@ function GetSchema(schemaName, errCallback, successCallback) {
     }
   });
 }
+
+app.get('/getEntities/all', (req, res) => {
+  let entitiesArray = [];
+
+  redisClient.keys('*', (err, keys) => {
+    if (!err) {
+      GetEntitiesByKeys(keys, entitiesArray, () => {
+        res.send(JSON.stringify(entitiesArray));
+      });
+    } else {
+      res.send(err);
+    }
+  });
+});
 
 app.get('/getSchema/:schemaName', (req, res) => {
   const schemaName = req.params.schemaName;

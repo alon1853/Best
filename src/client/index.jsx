@@ -1,5 +1,6 @@
 import React from 'react';
 import { render } from 'react-dom';
+import $ from 'jquery';
 import MapContainer from './map_container.jsx';
 import MapPanel from './map_panel.jsx';
 // import OpenLayers from './openlayers.jsx';
@@ -14,14 +15,23 @@ class App extends React.Component {
       entities: {}
     };
 
-    this.RecieveEntity = this.RecieveEntity.bind(this);
+    this.PullEntitiesFromServer = this.PullEntitiesFromServer.bind(this);
+    this.RecieveEntities = this.RecieveEntities.bind(this);
     this.ShouldUpdateEntity = this.ShouldUpdateEntity.bind(this);
     this.MergeEntities = this.MergeEntities.bind(this);
+
+    this.PullEntitiesFromServer();
   }
 
   componentWillMount() {
-    socketClient.on('recieve-entity', (entity) => {
-      this.RecieveEntity(entity);
+    socketClient.on('reconnect', () => {
+      console.log('Socket reconnected! Start pulling from server..');
+      this.PullEntitiesFromServer();
+    });
+
+    socketClient.on('entities-update', () => {
+      console.log('Got an update from the server, pulling from the server..');
+      this.PullEntitiesFromServer();
     });
   }
 
@@ -29,10 +39,29 @@ class App extends React.Component {
     return !(this.state.entities[entity.id] && JSON.stringify(entity) === JSON.stringify(this.state.entities[entity.id]));
   }
 
-  RecieveEntity(entity) {
-    if (this.ShouldUpdateEntity(entity)) {
-      this.state.entities[entity.id] = { lat: entity.lat, long: entity.long };
-      this.setState({ entities: this.state.entities });
+  PullEntitiesFromServer() {
+    $.get('getEntities/all', (entities) => {
+      entities = JSON.parse(entities);
+      let updatedEntities = {};
+
+      for (let i = 0; i < entities.length; i++) {
+        const entity = entities[i];
+        updatedEntities[entity.id] = { lat: entity.lat, long: entity.long };
+      }
+
+      this.setState({ entities: updatedEntities });
+    });
+  }
+
+  RecieveEntities(entitiesArray) {
+    console.log(entitiesArray);
+    for (let i = 0; i < entitiesArray.length; i++) {
+      const entity = entitiesArray[i];
+
+      if (this.ShouldUpdateEntity(entity)) {
+        this.state.entities[entity.id] = { lat: entity.lat, long: entity.long };
+        this.setState({ entities: this.state.entities });
+      }
     }
   }
 
