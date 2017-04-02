@@ -65,7 +65,7 @@ function SimulateEntitiesToDatabase() {
   let id = 0;
   let lat = 32.82994;
   let long = 34.99019;
-  const NUMBER_OF_ENTITIES = 20;
+  const NUMBER_OF_ENTITIES = 5;
 
   for (let i = 0; i < NUMBER_OF_ENTITIES; i++) {
     const entity = {
@@ -77,6 +77,16 @@ function SimulateEntitiesToDatabase() {
             "long": long
           }
         }
+      },
+      "sons": {
+        "array": [
+          {
+            "entityID": "1"
+          },
+          {
+            "entityID": "2"
+          }
+        ]
       }
     };
 
@@ -136,6 +146,11 @@ function SendDataToKafka(topicName, schema, dataArray) {
 }
 
 function SaveEntityToDatabase(entity, finishCallback) {
+  const sons = entity.sons.array;
+  for (let i = 0; i < sons.length; i++) {
+      redisClient.del(sons[i].entityID);
+  }
+
   redisClient.set(entity.entityID, JSON.stringify(entity), () => {
     finishCallback();
   });
