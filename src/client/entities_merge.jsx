@@ -4,6 +4,11 @@ class EntitiesMerge extends React.Component {
   constructor(props) {
     super(props);
 
+    this.state = {
+      messageColor: "",
+      messageText: ""
+    }
+
     this.MergeClicked = this.MergeClicked.bind(this);
   }
 
@@ -13,8 +18,24 @@ class EntitiesMerge extends React.Component {
     const entitiesIDs = this.refs.entitiesIDs.value.split(',');
     this.refs.entitiesIDs.value = '';
 
-    if (entitiesIDs[0] !== "") {
-      this.props.mergeEntities(entitiesIDs);
+    const arrayLength = entitiesIDs.length;
+
+    if (entitiesIDs[0] !== "" && arrayLength > 1) {
+      let shouldMerge = true;
+
+      for (let i = 0; shouldMerge && i < arrayLength; i++) {
+        if (!this.props.entities[entitiesIDs[i]]) {
+          shouldMerge = false;
+          this.setState({messageColor: "red", messageText: "Please insert valid IDs"});
+        }
+      }
+
+      if (shouldMerge) {
+        this.props.mergeEntities(entitiesIDs);
+        this.setState({messageColor: "green", messageText: "Entities merged successfully!"});
+      }
+    } else {
+      this.setState({messageColor: "red", messageText: "Please insert at least two IDs"});
     }
   }
 
@@ -29,6 +50,8 @@ class EntitiesMerge extends React.Component {
 
             <button type="submit" className="btn btn-primary">Merge</button>
           </form>
+
+          <div style={{color: this.state.messageColor}}>{this.state.messageText}</div>
         </div>
       </div>
     );
@@ -36,7 +59,12 @@ class EntitiesMerge extends React.Component {
 }
 
 EntitiesMerge.PropTypes = {
-  mergeEntities: React.PropTypes.func.isRequired
+  mergeEntities: React.PropTypes.func.isRequired,
+  entities: React.PropTypes.array
 };
+
+EntitiesMerge.defaultProps = {
+  entities: []
+}
 
 export default EntitiesMerge;
