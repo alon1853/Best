@@ -1,5 +1,6 @@
 import React from 'react';
 import EntitiesMerge from './entities_merge.jsx';
+import EntitiesSplit from './entities_split.jsx';
 
 class MapPanel extends React.Component {
   constructor(props) {
@@ -11,7 +12,8 @@ class MapPanel extends React.Component {
       <div className="panel">
         <div style={{color: "#fff", marginTop: "10px", marginLeft: "10px"}}>
           <div>Total Entities: {this.props.entitiesNumber}</div>
-          <EntitiesMerge mergeEntities={this.props.mergeEntities} />
+          <EntitiesMerge />
+          <EntitiesSplit />
         </div>
       </div>
     );
@@ -19,8 +21,7 @@ class MapPanel extends React.Component {
 }
 
 MapPanel.propTypes = {
-  entitiesNumber: React.PropTypes.number.isRequired,
-  mergeEntities: React.PropTypes.func.isRequired
+  entitiesNumber: React.PropTypes.number.isRequired
 }
 
 export default MapPanel;

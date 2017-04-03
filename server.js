@@ -31,7 +31,7 @@ redisClient.on('connect', () => {
   redisClient.flushdb((err, res) => {
     if (!err) {
       console.log('Flashed Redis successfully!');
-      //SimulateEntitiesToDatabase();
+      // SimulateEntitiesToDatabase();
     } else {
       console.log(err);
     }
@@ -43,9 +43,6 @@ redisClient.on('error', (err) => {
 });
 
 socketServer.on('connection', (socket) => {
-  socket.on('entities-merge', (entitiesIDs) => {
-    MergeEntities(entitiesIDs);
-  });
 });
 
 // ---------- Init ----------
@@ -59,13 +56,20 @@ GetSchema('merge_schema.json', (err) => {
   mergeSchema = schema;
 });
 
+let splitSchema;
+GetSchema('split_schema.json', (err) => {
+  console.log(err);
+}, (schema) => {
+  splitSchema = schema;
+});
+
 // ---------- Logic ----------
 
 function SimulateEntitiesToDatabase() {
   let id = 0;
   let lat = 32.82994;
   let long = 34.99019;
-  const NUMBER_OF_ENTITIES = 5;
+  const NUMBER_OF_ENTITIES = 10;
 
   for (let i = 0; i < NUMBER_OF_ENTITIES; i++) {
     const entity = {
@@ -80,12 +84,12 @@ function SimulateEntitiesToDatabase() {
       },
       "sons": {
         "array": [
-          {
-            "entityID": "1"
-          },
-          {
-            "entityID": "2"
-          }
+          // {
+          //   "entityID": "1"
+          // },
+          // {
+          //   "entityID": "2"
+          // }
         ]
       }
     };
@@ -95,9 +99,9 @@ function SimulateEntitiesToDatabase() {
     long -= 0.01;
 
     SaveEntityToDatabase(entity, () => {
-        if (i === NUMBER_OF_ENTITIES - 1) {
-          SendUpdateToClient();
-        }
+      if (i === NUMBER_OF_ENTITIES - 1) {
+        SendUpdateToClient();
+      }
     });
   }
 }
@@ -107,7 +111,7 @@ function SendUpdateToClient() {
 }
 
 function SubscribeToEntityUpdatesFromKafka() {
-  kafkaClient.consumer(UPDATE_CONSUMER_GROUP_NAME).join({ "format": "avro" }, (err, ci) => {
+  kafkaClient.consumer(UPDATE_CONSUMER_GROUP_NAME).join({ "format": "avro", "auto.offset.reset": "smallest" }, (err, ci) => {
     if (err) {
       console.log('Failed to create instance in consumer group: ' + err);
     } else {
@@ -148,7 +152,7 @@ function SendDataToKafka(topicName, schema, dataArray) {
 function SaveEntityToDatabase(entity, finishCallback) {
   const sons = entity.sons.array;
   for (let i = 0; i < sons.length; i++) {
-      redisClient.del(sons[i].entityID);
+    redisClient.del(sons[i].entityID);
   }
 
   redisClient.set(entity.entityID, JSON.stringify(entity), () => {
@@ -183,8 +187,19 @@ function GetEntitiesByKeys(keys, entitiesArray, finishCallback) {
   }
 }
 
-function MergeEntities(entitiesIDs) {
-  let idObjects = [];
+function GetSchema(schemaName, errCallback, successCallback) {
+  fs.readFile('schemas/' + schemaName, (err, data) => {
+    if (err) {
+      errCallback('Error, can not access file ' + SCHEMAS_FOLDER + schemaName + SCHEMA_FORMAT);
+    } else {
+      successCallback(JSON.parse(data));
+    }
+  });
+}
+
+app.post('/mergeEntities', (req, res) => {
+  console.log('Got a request for merge');
+  const entitiesIDs = req.body["data[]"];
 
   const entitiesAsSchema = {
     "mergedEntitiesId": {
@@ -195,17 +210,9 @@ function MergeEntities(entitiesIDs) {
   dataToSend = [];
   dataToSend.push(entitiesAsSchema);
   SendDataToKafka(MERGE_TOPIC_NAME, mergeSchema, dataToSend);
-}
 
-function GetSchema(schemaName, errCallback, successCallback) {
-  fs.readFile('schemas/' + schemaName, (err, data) => {
-    if (err) {
-      errCallback('Error, can not access file ' + SCHEMAS_FOLDER + schemaName + SCHEMA_FORMAT);
-    } else {
-      successCallback(JSON.parse(data));
-    }
-  });
-}
+  res.send(true);
+});
 
 app.get('/getEntities/all', (req, res) => {
   let entitiesArray = [];

@@ -18,7 +18,6 @@ class App extends React.Component {
     this.PullEntitiesFromServer = this.PullEntitiesFromServer.bind(this);
     this.RecieveEntities = this.RecieveEntities.bind(this);
     this.ShouldUpdateEntity = this.ShouldUpdateEntity.bind(this);
-    this.MergeEntities = this.MergeEntities.bind(this);
 
     this.PullEntitiesFromServer();
   }
@@ -65,16 +64,12 @@ class App extends React.Component {
     }
   }
 
-  MergeEntities(entitiesArray) {
-    socketClient.emit('entities-merge', entitiesArray);
-  }
-
   // <OpenLayers center={[34.99019, 32.82994]} />
 
   render() {
     return (
       <div>
-        <MapPanel entitiesNumber={Object.keys(this.state.entities).length} mergeEntities={this.MergeEntities} />
+        <MapPanel entitiesNumber={Object.keys(this.state.entities).length} />
         <MapContainer center={[32.673290963389306, 34.83748543481079]} zoom={8} divClass={'map-container'} entities={this.state.entities} />
       </div>
     );

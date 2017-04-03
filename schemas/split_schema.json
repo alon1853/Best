@@ -1,0 +1,10 @@
+{
+  "type": "record",
+  "name": "splitEvent",
+  "fields": [
+    {
+      "name": "splittedEntityID",
+      "type": "string"
+    }
+  ]
+}

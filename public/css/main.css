@@ -2,7 +2,7 @@
   position: fixed;
   bottom: 0;
   left: 0;
-  height: 70px;
+  height: 100px;
   width: 100%;
   background-color: #000;
   opacity: 0.3;
@@ -13,20 +13,25 @@
 
 .panel:hover {
   opacity: 0.8;
-  height: 150px;
+  height: 250px;
   font-size: 12pt;
 }
 
-.panelMergeEntities {
+.panelEntitiesTitle {
+  margin-top: 5px;
+  border-bottom: 1px #fff dashed;
+}
+
+.panelEntities {
   display: none;
   margin-top: 10px;
 }
 
-.panelMergeEntities #entitiesIDs {
+.panelEntities #entitiesIDs {
   width: 50%;
 }
 
-.panel:hover .panelMergeEntities {
+.panel:hover .panelEntities {
   display: block;
 }
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import $ from 'jquery';
 
 class EntitiesMerge extends React.Component {
   constructor(props) {
@@ -31,8 +32,11 @@ class EntitiesMerge extends React.Component {
       // }
 
       if (shouldMerge) {
-        this.props.mergeEntities(entitiesIDs);
-        this.setState({messageColor: "green", messageText: "Entities merged successfully!"});
+        $.post('mergeEntities', { data: entitiesIDs }, (result) => {
+          if (result) {
+            this.setState({messageColor: "green", messageText: "Entities merged successfully!"});
+          }
+        });
       }
     } else {
       this.setState({messageColor: "red", messageText: "Please insert at least two IDs"});
@@ -42,8 +46,8 @@ class EntitiesMerge extends React.Component {
   render() {
     return(
       <div>
-        <span style={{marginTop: "5px", borderBottom: "1px #fff dashed"}}>Merge Entities</span>
-        <div className="panelMergeEntities">
+        <span className="panelEntitiesTitle">Merge Entities</span>
+        <div className="panelEntities">
           <form className="form-inline" onSubmit={this.MergeClicked}>
             <label className="mr-sm-2" htmlFor="entitiesIDs">Entities IDs:</label>
             <input type="text" className="form-control mb-2 mr-sm-2 mb-sm-0" ref="entitiesIDs" id="entitiesIDs" placeholder="ID1,ID2,ID3,..." />
@@ -59,7 +63,6 @@ class EntitiesMerge extends React.Component {
 }
 
 EntitiesMerge.PropTypes = {
-  mergeEntities: React.PropTypes.func.isRequired,
   entities: React.PropTypes.array
 };
 
