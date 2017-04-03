@@ -150,9 +150,15 @@ function SendDataToKafka(topicName, schema, dataArray) {
 }
 
 function SaveEntityToDatabase(entity, finishCallback) {
-  const sons = entity.sons.array;
-  for (let i = 0; i < sons.length; i++) {
-    redisClient.del(sons[i].entityID);
+  if (entity.stateChanges === "MERGED") {
+    console.log('Got entity ' + entity.entityID + ' with stateChanges = "MERGED", deleting sons:');
+
+    const sons = entity.sons.array;
+
+    for (let i = 0; i < sons.length; i++) {
+      console.log(sons[i].entityID);
+      redisClient.del(sons[i].entityID);
+    }
   }
 
   redisClient.set(entity.entityID, JSON.stringify(entity), () => {
