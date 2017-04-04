@@ -124,7 +124,7 @@ class OpenLayers extends React.Component {
     this.InitMapEvents();
   }
 
-  componentWillUpdate(nextProps, nextState) {
+  componentWillReceiveProps(nextProps) {
     const keys = Object.keys(nextProps.entities);
     let tempFeatures = [];
 
