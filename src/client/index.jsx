@@ -16,7 +16,6 @@ class App extends React.Component {
     };
 
     this.PullEntitiesFromServer = this.PullEntitiesFromServer.bind(this);
-    this.ShouldUpdateEntity = this.ShouldUpdateEntity.bind(this);
 
     this.PullEntitiesFromServer();
   }
