@@ -16,7 +16,6 @@ class App extends React.Component {
     };
 
     this.PullEntitiesFromServer = this.PullEntitiesFromServer.bind(this);
-    this.RecieveEntities = this.RecieveEntities.bind(this);
     this.ShouldUpdateEntity = this.ShouldUpdateEntity.bind(this);
 
     this.PullEntitiesFromServer();
@@ -34,10 +33,6 @@ class App extends React.Component {
     });
   }
 
-  ShouldUpdateEntity(entity) {
-    return !(this.state.entities[entity.id] && JSON.stringify(entity) === JSON.stringify(this.state.entities[entity.id]));
-  }
-
   PullEntitiesFromServer() {
     $.get('getEntities/all', (entities) => {
       entities = JSON.parse(entities);
@@ -53,19 +48,7 @@ class App extends React.Component {
     });
   }
 
-  RecieveEntities(entitiesArray) {
-    console.log(entitiesArray);
-    for (let i = 0; i < entitiesArray.length; i++) {
-      const entity = entitiesArray[i];
-
-      if (this.ShouldUpdateEntity(entity)) {
-        this.state.entities[entity.id] = { lat: entity.lat, long: entity.long };
-        this.setState({ entities: this.state.entities });
-      }
-    }
-  }
-
-  // <OpenLayers center={[34.99019, 32.82994]} />
+  // <OpenLayers center={[35.081791, 32.839458]} zoom={15} entities={this.state.entities} />
 
   render() {
     return (

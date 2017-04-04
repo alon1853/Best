@@ -21,6 +21,7 @@ app.use(bodyParser.json());
 
 const UPDATE_TOPIC_NAME = 'update';
 const MERGE_TOPIC_NAME = 'merge';
+const SPLIT_TOPIC_NAME = 'split';
 const UPDATE_CONSUMER_GROUP_NAME = 'update-consumer-group';
 
 // ---------- Events ----------
@@ -66,10 +67,12 @@ GetSchema('split_schema.json', (err) => {
 // ---------- Logic ----------
 
 function SimulateEntitiesToDatabase() {
+  console.log('Starting to simulate entities...');
+
   let id = 0;
   let lat = 32.82994;
   let long = 34.99019;
-  const NUMBER_OF_ENTITIES = 10;
+  const NUMBER_OF_ENTITIES = 20;
 
   for (let i = 0; i < NUMBER_OF_ENTITIES; i++) {
     const entity = {
@@ -197,7 +200,6 @@ function GetSchema(schemaName, errCallback, successCallback) {
 }
 
 app.post('/mergeEntities', (req, res) => {
-  console.log('Got a request for merge');
   const entitiesIDs = req.body["data[]"];
   let entitiesArray = [];
   let entitiesObject = {};
@@ -215,6 +217,20 @@ app.post('/mergeEntities', (req, res) => {
 
     res.send(true);
   });
+});
+
+app.post('/splitEntity', (req, res) => {
+  const entityID = req.body.entityID;
+
+  const entityAsSchema = {
+    "splittedEntityID": entityID
+  };
+
+  dataToSend = [];
+  dataToSend.push(entityAsSchema);
+  SendDataToKafka(SPLIT_TOPIC_NAME, splitSchema, dataToSend);
+
+  res.send(true);
 });
 
 app.get('/getEntities/all', (req, res) => {

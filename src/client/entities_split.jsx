@@ -12,8 +12,33 @@ class EntitiesSplit extends React.Component {
     this.SplitClicked = this.SplitClicked.bind(this);
   }
 
-  SplitClicked() {
+  SplitClicked(e) {
+    e.preventDefault();
 
+    const entityID = this.refs.entityID.value;
+    this.refs.entityID.value = '';
+
+
+    if (entityID !== "") {
+      let shouldSplit = true;
+
+      // for (let i = 0; shouldMerge && i < arrayLength; i++) {
+      //   if (!this.props.entities[entitiesIDs[i]]) {
+      //     shouldMerge = false;
+      //     this.setState({messageColor: "red", messageText: "Please insert valid IDs"});
+      //   }
+      // }
+
+      if (shouldSplit) {
+        $.post('slpitEntity', { entityID: entityID }, (result) => {
+          if (result) {
+            this.setState({messageColor: "green", messageText: "Entity splitted successfully!"});
+          }
+        });
+      }
+    } else {
+      this.setState({messageColor: "red", messageText: "Please insert entity id"});
+    }
   }
 
   render() {
@@ -22,8 +47,8 @@ class EntitiesSplit extends React.Component {
         <span className="panelEntitiesTitle">Split Entity</span>
         <div className="panelEntities">
           <form className="form-inline" onSubmit={this.SplitClicked}>
-            <label className="mr-sm-2" htmlFor="entitiesIDs">Entity ID:</label>
-            <input type="text" className="form-control mb-2 mr-sm-2 mb-sm-0" ref="entitiesIDs" id="entitiesIDs" placeholder="ID1,ID2,ID3,..." />
+            <label className="mr-sm-2" htmlFor="entityID">Entity ID:</label>
+            <input type="text" className="form-control mb-2 mr-sm-2 mb-sm-0" ref="entityID" id="entityID" placeholder="entityID" />
 
             <button type="submit" className="btn btn-primary">Split</button>
           </form>
