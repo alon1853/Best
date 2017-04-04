@@ -21,6 +21,7 @@
     "jquery": "^3.2.1",
     "kafka-rest": "0.0.5",
     "leaflet": "^1.0.3",
+    "openlayers": "^4.0.1",
     "react": "^15.4.2",
     "react-dom": "^15.4.2",
     "react-leaflet": "^1.1.4",

@@ -3,7 +3,7 @@ import { render } from 'react-dom';
 import $ from 'jquery';
 import MapContainer from './map_container.jsx';
 import MapPanel from './map_panel.jsx';
-// import OpenLayers from './openlayers.jsx';
+import OpenLayers from './openlayers.jsx';
 
 const socketClient = require('./socket_client.js');
 
@@ -47,13 +47,13 @@ class App extends React.Component {
     });
   }
 
-  // <OpenLayers center={[35.081791, 32.839458]} zoom={15} entities={this.state.entities} />
+  // <MapContainer center={[32.673290963389306, 34.83748543481079]} zoom={8} divClass={'map-container'} entities={this.state.entities} />
 
   render() {
     return (
       <div>
         <MapPanel entitiesNumber={Object.keys(this.state.entities).length} />
-        <MapContainer center={[32.673290963389306, 34.83748543481079]} zoom={8} divClass={'map-container'} entities={this.state.entities} />
+        <OpenLayers center={[35.081791, 32.839458]} zoom={12} entities={this.state.entities} />
       </div>
     );
   }
