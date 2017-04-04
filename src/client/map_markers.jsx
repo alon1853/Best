@@ -9,7 +9,8 @@ class MapMarkers extends React.Component {
   render() {
       const markers = Object.keys(this.props.entities).map((key, index) => {
         const entity = this.props.entities[key];
-        const position = [entity.lat, entity.long];
+        const coordinate = entity.entityAttributes.basicAttributes.coordinate;
+        const position = [coordinate.lat, coordinate.long];
 
         return (
           <Marker position={position} key={key}>

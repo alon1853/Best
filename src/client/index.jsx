@@ -42,10 +42,11 @@ class App extends React.Component {
     $.get('getEntities/all', (entities) => {
       entities = JSON.parse(entities);
       let updatedEntities = {};
+      const keys = Object.keys(entities);
 
-      for (let i = 0; i < entities.length; i++) {
-        const entity = entities[i];
-        updatedEntities[entity.id] = { lat: entity.lat, long: entity.long };
+      for (let i = 0; i < keys.length; i++) {
+        const entity = entities[keys[i]];
+        updatedEntities[entity.entityID] = entity;
       }
 
       this.setState({ entities: updatedEntities });

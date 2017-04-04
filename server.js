@@ -163,14 +163,16 @@ function SaveEntityToDatabase(entity, finishCallback) {
   });
 }
 
-function GetEntitiesByKeys(keys, entitiesArray, finishCallback) {
+function GetEntitiesByKeys(keys, entitiesArray, entitiesObject, finishCallback) {
   if (keys.length === 0) {
     finishCallback();
   } else {
     for (let i = 0; i < keys.length; i++) {
       redisClient.get(keys[i], (err, res) => {
         if (!err) {
-          entitiesArray.push(JSON.parse(res));
+          const entity = JSON.parse(res);
+          entitiesArray.push(entity);
+          entitiesObject[entity.entityID] = entity;
 
           if (keys.length - 1 === i) {
             finishCallback();
@@ -198,12 +200,9 @@ app.post('/mergeEntities', (req, res) => {
   console.log('Got a request for merge');
   const entitiesIDs = req.body["data[]"];
   let entitiesArray = [];
+  let entitiesObject = {};
 
-
-  GetEntitiesByKeys(entitiesIDs, entitiesArray, () => {
-    console.log('entitiesArray = ');
-    console.log(JSON.stringify(entitiesArray));
-
+  GetEntitiesByKeys(entitiesIDs, entitiesArray, entitiesObject, () => {
     const familiesAsSchema = {
       "mergedFamilies": {
         "array": entitiesArray
@@ -220,11 +219,12 @@ app.post('/mergeEntities', (req, res) => {
 
 app.get('/getEntities/all', (req, res) => {
   let entitiesArray = [];
+  let entitiesObject = {};
 
   redisClient.keys('*', (err, keys) => {
     if (!err) {
-      GetEntitiesByKeys(keys, entitiesArray, () => {
-        res.send(JSON.stringify(entitiesArray));
+      GetEntitiesByKeys(keys, entitiesArray, entitiesObject, () => {
+        res.send(JSON.stringify(entitiesObject));
       });
     } else {
       res.send(err);
