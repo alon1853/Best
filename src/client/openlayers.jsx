@@ -148,9 +148,10 @@ class OpenLayers extends React.Component {
       tempFeatures.push(feature);
     }
 
+    this.vectorSource.clear();
     this.vectorSource.addFeatures(tempFeatures);
   }
-  
+
   // <a href="#" className="ol-popup-closer"></a>
 
   render() {
