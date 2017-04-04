@@ -84,12 +84,9 @@ function SimulateEntitiesToDatabase() {
       },
       "sons": {
         "array": [
-          // {
-          //   "entityID": "1"
-          // },
-          // {
-          //   "entityID": "2"
-          // }
+          {
+            "entityID": id.toString()
+          }
         ]
       }
     };
@@ -173,13 +170,7 @@ function GetEntitiesByKeys(keys, entitiesArray, finishCallback) {
     for (let i = 0; i < keys.length; i++) {
       redisClient.get(keys[i], (err, res) => {
         if (!err) {
-          const entityFromDatabase = JSON.parse(res);
-          const entityToClient = {
-            id: entityFromDatabase.entityID,
-            lat: entityFromDatabase.entityAttributes.basicAttributes.coordinate.lat,
-            long: entityFromDatabase.entityAttributes.basicAttributes.coordinate.long
-          };
-          entitiesArray.push(entityToClient);
+          entitiesArray.push(JSON.parse(res));
 
           if (keys.length - 1 === i) {
             finishCallback();
@@ -206,18 +197,25 @@ function GetSchema(schemaName, errCallback, successCallback) {
 app.post('/mergeEntities', (req, res) => {
   console.log('Got a request for merge');
   const entitiesIDs = req.body["data[]"];
+  let entitiesArray = [];
 
-  const entitiesAsSchema = {
-    "mergedEntitiesId": {
-      "array": entitiesIDs
-    }
-  };
 
-  dataToSend = [];
-  dataToSend.push(entitiesAsSchema);
-  SendDataToKafka(MERGE_TOPIC_NAME, mergeSchema, dataToSend);
+  GetEntitiesByKeys(entitiesIDs, entitiesArray, () => {
+    console.log('entitiesArray = ');
+    console.log(JSON.stringify(entitiesArray));
 
-  res.send(true);
+    const familiesAsSchema = {
+      "mergedFamilies": {
+        "array": entitiesArray
+      }
+    };
+
+    dataToSend = [];
+    dataToSend.push(familiesAsSchema);
+    SendDataToKafka(MERGE_TOPIC_NAME, mergeSchema, dataToSend);
+
+    res.send(true);
+  });
 });
 
 app.get('/getEntities/all', (req, res) => {

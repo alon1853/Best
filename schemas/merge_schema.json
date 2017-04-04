@@ -4,13 +4,13 @@
   "doc": "This is a schema for merge entities event",
   "fields": [
     {
-      "name": "mergedEntitiesId",
+      "name": "mergedFamilies",
       "type": [
         {
           "type": "array",
           "items": {
-            "name": "entityId",
-            "type": "string"
+            "name": "family",
+            "type": "entityFamily"
           }
         }
       ],
