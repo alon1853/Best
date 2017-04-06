@@ -23,6 +23,7 @@ const UPDATE_TOPIC_NAME = 'update';
 const MERGE_TOPIC_NAME = 'merge';
 const SPLIT_TOPIC_NAME = 'split';
 const UPDATE_CONSUMER_GROUP_NAME = 'update-consumer-group';
+const HISTORY_CONSUMER_GROUP_NAME = 'history-consumer-group';
 
 // ---------- Events ----------
 
@@ -31,8 +32,10 @@ redisClient.on('connect', () => {
 
   redisClient.flushdb((err, res) => {
     if (!err) {
-      console.log('Flashed Redis successfully!');
+      console.log('Flushed Redis successfully!');
       // SimulateEntitiesToDatabase();
+      // SimulateEntitiesUpdatesToDatabase();
+
     } else {
       console.log(err);
     }
@@ -48,7 +51,7 @@ socketServer.on('connection', (socket) => {
 
 // ---------- Init ----------
 
-SubscribeToEntityUpdatesFromKafka();
+InitKafkaConsumerGroup(UPDATE_CONSUMER_GROUP_NAME, HandleEntitiesUpdates);
 
 let mergeSchema;
 GetSchema('merge_schema.json', (err) => {
@@ -72,7 +75,7 @@ function SimulateEntitiesToDatabase() {
   let id = 0;
   let lat = 32.82994;
   let long = 34.99019;
-  const NUMBER_OF_ENTITIES = 20;
+  const NUMBER_OF_ENTITIES = 2000;
 
   for (let i = 0; i < NUMBER_OF_ENTITIES; i++) {
     const entity = {
@@ -106,31 +109,85 @@ function SimulateEntitiesToDatabase() {
   }
 }
 
+function SimulateEntitiesUpdatesToDatabase() {
+  console.log('Starting to simulate entities updates...');
+
+  let id = 0;
+  let lat = 32.83994;
+  let long = 34.10019;
+
+  setInterval(() => {
+    const entity = {
+      "entityID": id.toString(),
+      "entityAttributes": {
+        "basicAttributes": {
+          "coordinate": {
+            "lat": lat,
+            "long": long
+          }
+        }
+      },
+      "sons": {
+        "array": [
+          {
+            "entityID": id.toString()
+          }
+        ]
+      }
+    };
+
+    id++;
+    lat -= 0.02;
+    long -= 0.02;
+
+    SaveEntityToDatabase(entity, () => {
+      SendUpdateToClient();
+    });
+  }, 100);
+}
+
 function SendUpdateToClient() {
   socketServer.emit('entities-update');
 }
 
-function SubscribeToEntityUpdatesFromKafka() {
-  kafkaClient.consumer(UPDATE_CONSUMER_GROUP_NAME).join({ "format": "avro", "auto.offset.reset": "smallest" }, (err, ci) => {
+function HandleEntitiesUpdates(msgs) {
+  for(let i = 0; i < msgs.length; i++) {
+    const entity = msgs[i].value;
+
+    console.log('Received entity with entityID = ' + entity.entityID);
+
+    SaveEntityToDatabase(entity, SendUpdateToClient);
+  }
+}
+
+function SubscribeToEntityUpdatesFromKafka(consumerGroupName, handleDataReceivedCallback) {
+  kafkaClient.consumer(consumerGroupName).join({ "format": "avro", "auto.offset.reset": "smallest" }, (err, ci) => {
     if (err) {
       console.log('Failed to create instance in consumer group: ' + err);
     } else {
+      console.log('Joined to consumer group "' + consumerGroupName + '" successfully!');
       const stream = ci.subscribe(UPDATE_TOPIC_NAME);
-
-      console.log('Subscribed to topic ' + UPDATE_TOPIC_NAME + ' successfully!');
+      console.log('Subscribed to topic "' + UPDATE_TOPIC_NAME + '" successfully!');
 
       stream.on('data', function(msgs) {
-        for(let i = 0; i < msgs.length; i++) {
-          const entity = msgs[i].value;
-
-          console.log('Received entity with entityID = ' + entity.entityID);
-
-          SaveEntityToDatabase(entity, SendUpdateToClient);
-        }
+        handleDataReceivedCallback(msgs);
       });
 
       stream.on('error', function(err) {
         console.log("Consumer instance reported an error: " + err);
+      });
+    }
+  });
+}
+
+function InitKafkaConsumerGroup(consumerGroupName, handleDataReceivedCallback) {
+  kafkaClient.consumer(consumerGroupName).join({ "format": "avro", "auto.offset.reset": "smallest" }, (err, ci) => {
+    if (err) {
+      console.log('Failed to create instance in consumer group: ' + err);
+    } else {
+      ci.shutdown(() => {
+        console.log('Cleaned consumer group "' + consumerGroupName + '" successfully!');
+        SubscribeToEntityUpdatesFromKafka(consumerGroupName, handleDataReceivedCallback);
       });
     }
   });
@@ -201,22 +258,18 @@ function GetSchema(schemaName, errCallback, successCallback) {
 
 app.post('/mergeEntities', (req, res) => {
   const entitiesIDs = req.body["data[]"];
-  let entitiesArray = [];
-  let entitiesObject = {};
 
-  GetEntitiesByKeys(entitiesIDs, entitiesArray, entitiesObject, () => {
-    const familiesAsSchema = {
-      "mergedFamilies": {
-        "array": entitiesArray
-      }
-    };
+  const entitiesAsSchema = {
+    "mergedEntitiesId": {
+      "array": entitiesIDs
+    }
+  };
 
-    dataToSend = [];
-    dataToSend.push(familiesAsSchema);
-    SendDataToKafka(MERGE_TOPIC_NAME, mergeSchema, dataToSend);
+  dataToSend = [];
+  dataToSend.push(entitiesAsSchema);
+  SendDataToKafka(MERGE_TOPIC_NAME, mergeSchema, dataToSend);
 
-    res.send(true);
-  });
+  res.send(true);
 });
 
 app.post('/splitEntity', (req, res) => {
@@ -231,6 +284,12 @@ app.post('/splitEntity', (req, res) => {
   SendDataToKafka(SPLIT_TOPIC_NAME, splitSchema, dataToSend);
 
   res.send(true);
+});
+
+app.get('/getHistory/:entityID', (req, res) => {
+  const entityID = req.params.entityID;
+  const consumerInstance = SubscribeToEntityUpdatesFromKafka(HISTORY_CONSUMER_GROUP_NAME);
+
 });
 
 app.get('/getEntities/all', (req, res) => {
