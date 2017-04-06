@@ -51,7 +51,7 @@ socketServer.on('connection', (socket) => {
 
 // ---------- Init ----------
 
-InitKafkaConsumerGroup(UPDATE_CONSUMER_GROUP_NAME, HandleEntitiesUpdates);
+SubscribeToEntityUpdatesFromKafka(UPDATE_CONSUMER_GROUP_NAME + '-' + Math.random(), 'UPDATE', HandleEntitiesUpdates);
 
 let mergeSchema;
 GetSchema('merge_schema.json', (err) => {
@@ -154,40 +154,27 @@ function HandleEntitiesUpdates(msgs) {
   for(let i = 0; i < msgs.length; i++) {
     const entity = msgs[i].value;
 
-    console.log('Received entity with entityID = ' + entity.entityID);
+    console.log('[UPDATE] Received entity with entityID = ' + entity.entityID);
 
     SaveEntityToDatabase(entity, SendUpdateToClient);
   }
 }
 
-function SubscribeToEntityUpdatesFromKafka(consumerGroupName, handleDataReceivedCallback) {
+function SubscribeToEntityUpdatesFromKafka(consumerGroupName, subLoggerName, handleDataReceivedCallback) {
   kafkaClient.consumer(consumerGroupName).join({ "format": "avro", "auto.offset.reset": "smallest" }, (err, ci) => {
     if (err) {
-      console.log('Failed to create instance in consumer group: ' + err);
+      console.log('[' + subLoggerName + '] Failed to create instance in consumer group: ' + err);
     } else {
-      console.log('Joined to consumer group "' + consumerGroupName + '" successfully!');
+      console.log('[' + subLoggerName + '] Joined to consumer group "' + consumerGroupName + '" successfully!');
       const stream = ci.subscribe(UPDATE_TOPIC_NAME);
-      console.log('Subscribed to topic "' + UPDATE_TOPIC_NAME + '" successfully!');
+      console.log('[' + subLoggerName + '] Subscribed to topic "' + UPDATE_TOPIC_NAME + '" successfully!');
 
-      stream.on('data', function(msgs) {
+      stream.on('data', (msgs) => {
         handleDataReceivedCallback(msgs);
       });
 
-      stream.on('error', function(err) {
+      stream.on('error', (err) => {
         console.log("Consumer instance reported an error: " + err);
-      });
-    }
-  });
-}
-
-function InitKafkaConsumerGroup(consumerGroupName, handleDataReceivedCallback) {
-  kafkaClient.consumer(consumerGroupName).join({ "format": "avro", "auto.offset.reset": "smallest" }, (err, ci) => {
-    if (err) {
-      console.log('Failed to create instance in consumer group: ' + err);
-    } else {
-      ci.shutdown(() => {
-        console.log('Cleaned consumer group "' + consumerGroupName + '" successfully!');
-        SubscribeToEntityUpdatesFromKafka(consumerGroupName, handleDataReceivedCallback);
       });
     }
   });
@@ -287,9 +274,19 @@ app.post('/splitEntity', (req, res) => {
 });
 
 app.get('/getHistory/:entityID', (req, res) => {
+  let historyArray = [];
   const entityID = req.params.entityID;
-  const consumerInstance = SubscribeToEntityUpdatesFromKafka(HISTORY_CONSUMER_GROUP_NAME);
+  SubscribeToEntityUpdatesFromKafka(HISTORY_CONSUMER_GROUP_NAME + '-' + Math.random(), 'HISTORY', (msgs) => {
+    for(let i = 0; i < msgs.length; i++) {
+      const entity = msgs[i].value;
 
+      if (entityID === entity.entityID) {
+        historyArray.push(entity);
+      }
+    }
+
+    res.send(JSON.stringify(historyArray));
+  });
 });
 
 app.get('/getEntities/all', (req, res) => {
