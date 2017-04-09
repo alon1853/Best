@@ -31,7 +31,7 @@ class EntitiesSplit extends React.Component {
       // }
 
       if (shouldSplit) {
-        $.post('slpitEntity', { entityID: entityID }, (result) => {
+        $.post('splitEntity', { entityID: entityID }, (result) => {
           if (result) {
             this.setState({messageColor: "green", messageText: "Entity splitted successfully!"});
           }
