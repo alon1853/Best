@@ -141,7 +141,8 @@ class OpenLayers extends React.Component {
       feature.setStyle(new ol.style.Style({
         image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
           color: '#c95145',
-          src: 'dot.png'
+          src: 'dot.png',
+          opacity: 1
         }))
       }));
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import $ from 'jquery';
 
 class EntitiesSplit extends React.Component {
   constructor(props) {
